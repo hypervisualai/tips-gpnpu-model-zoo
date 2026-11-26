@@ -1,0 +1,9 @@
+# Swin-T — fuse_package_v1
+format: fuse_package_v1
+name: swin_t
+build:
+  kind: library
+  framework: timm
+  model: swin_tiny_patch4_window7_224
+  nc_arg: num_classes
+  requires: ["timm>=1.0"]

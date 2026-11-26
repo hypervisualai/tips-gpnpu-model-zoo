@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fuse_scale_v1.schema.json",
+  "title": "FUSE scale 파일 (fuse_scale_v1)",
+  "description": "층별 활성값 범위(INT8 양자화 범위) + FP 유지 층 목록. 정의 문서: docs/fuse_scale_v1.md. 이 Schema 로 못 거르는 규칙(fp_keep 층이 layers 에 있는가, 모델과 Cout·가중치 지문 대조)은 명세 §6 을 따른다.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "model", "variant", "imgsz", "weights", "calib",
+               "act_scheme", "out_scale_mode", "fp_keep", "layers"],
+  "properties": {
+    "format": {"const": "fuse_scale_v1"},
+    "model": {"$ref": "#/$defs/name"},
+    "variant": {"$ref": "#/$defs/name"},
+    "imgsz": {"type": "integer", "minimum": 1},
+    "weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "sha256"],
+      "properties": {
+        "file": {"$ref": "#/$defs/name"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "calib": {
+      "type": "object",
+      "required": ["tool", "dataset", "n_images", "preprocess", "out_method", "in_method"],
+      "properties": {
+        "tool": {"$ref": "#/$defs/name"},
+        "tool_version": {"type": ["string", "null"]},
+        "dataset": {"$ref": "#/$defs/name"},
+        "n_images": {"type": "integer", "minimum": 1},
+        "images_sha256": {"anyOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+        "preprocess": {"$ref": "#/$defs/name"},
+        "out_method": {"$ref": "#/$defs/name"},
+        "out_method_args": {"$ref": "#/$defs/method_args"},
+        "in_method": {"$ref": "#/$defs/name"},
+        "in_method_args": {"$ref": "#/$defs/method_args"},
+        "accuracy": {"type": "object"},
+        "out_granularity": {"enum": ["channel", "tensor"]}
+      }
+    },
+    "act_scheme": {"const": "symmetric"},
+    "out_scale_mode": {"$ref": "#/$defs/out_mode"},
+    "fp_keep": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["layer", "reason"],
+        "properties": {
+          "layer": {"$ref": "#/$defs/layer_path"},
+          "reason": {"$ref": "#/$defs/name"}
+        }
+      }
+    },
+    "layers": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/$defs/layer_path"},
+      "additionalProperties": {"$ref": "#/$defs/layer"}
+    },
+    "created": {"type": "string"}
+  },
+  "allOf": [
+    {
+      "$comment": "out_scale_mode 가 per_channel 이면 모든 층의 out.max 는 배열이어야 한다",
+      "if": {"properties": {"out_scale_mode": {"const": "per_channel"}}},
+      "then": {
+        "properties": {
+          "layers": {
+            "additionalProperties": {
+              "properties": {"out": {"properties": {"max": {"type": "array"}}}}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "name": {"type": "string", "minLength": 1},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "out_mode": {"enum": ["single", "per_channel"]},
+    "layer_path": {"type": "string", "pattern": "^[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)*$"},
+    "positive": {"type": "number", "exclusiveMinimum": 0},
+    "method_args": {
+      "$comment": "방법의 설정. 열린 객체 — margin 만 모양을 정한다(범위에 곱한 여유 배수, 기록용)",
+      "type": "object",
+      "properties": {"margin": {"$ref": "#/$defs/positive"}}
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "in", "out"],
+      "properties": {
+        "op": {"enum": ["conv2d", "linear"]},
+        "in": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max"],
+          "properties": {"max": {"$ref": "#/$defs/positive"}}
+        },
+        "out": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max"],
+          "properties": {
+            "max": {
+              "oneOf": [
+                {"$ref": "#/$defs/positive"},
+                {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/positive"}}
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

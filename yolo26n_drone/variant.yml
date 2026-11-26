@@ -1,0 +1,5 @@
+# 드론 YOLO26n — fuse_package_v1
+format: fuse_package_v1
+template: .
+weights_url: https://github.com/hypervisualai/tips-gpnpu-model-zoo/releases/download/weights-v1/yolo26_drone.pt
+classes: [pedestrian, people, bicycle, car, van, truck, tricycle, awning-tricycle, bus, motor]

@@ -1,0 +1,7 @@
+# YOLOv13-N — fuse_package_v1
+format: fuse_package_v1
+name: yolov13n
+build:
+  kind: weights_file
+  framework: ultralytics
+  requires: ["ultralytics @ git+https://github.com/iMoonLab/yolov13@73289949533efac82bb5f72ec19b746618656bd2"]

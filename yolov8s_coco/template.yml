@@ -1,0 +1,7 @@
+# YOLOv8s — fuse_package_v1
+format: fuse_package_v1
+name: yolov8s
+build:
+  kind: weights_file
+  framework: ultralytics
+  requires: ["ultralytics==8.4.35"]
